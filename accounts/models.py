@@ -10,3 +10,4 @@ class User(AbstractUser):
         ('parent','Parent'),
     )
     role=models.CharField(max_length=10,choices=ROLE_CHOICES)
+    
