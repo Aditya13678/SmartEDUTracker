@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from accounts.models import User
-from .models import Student,Standards, Section,ParentStudent
+from .models import Student,Standards, Section,ParentStudent,Attendance
 
 
 class StudentRegistrationSerializers(serializers.ModelSerializer):
@@ -23,6 +23,8 @@ class StudentRegistrationSerializers(serializers.ModelSerializer):
             first_name=validated_data['name'],
             role='STUDENT'
         )
+        user.set_password(validated_data['password'])
+        user.save()
 
         standard=Standards.objects.get(id=validated_data['standard_id'])
         section=Section.objects.get(id=validated_data['section_id'])
@@ -88,3 +90,48 @@ class LinkParentSerializer(serializers.ModelSerializer):
             "parent":instance.parent.first_name,
             "message":"Parent linked to student successfully"
         }
+    
+
+class SectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Section
+        fields=["id","name","standard"]
+
+
+class StandardSerializer(serializers.ModelSerializer):
+    sections=SectionSerializer(many=True,read_only=True)
+    class Meta:
+        model=Standards
+        fields=["id","names","sections"]
+
+
+
+
+
+class AttendanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Attendance
+        fields=["id","student","date","status","marked_by"]
+        read_only_fields=["marked_by"]
+
+class AttendanceMarkSerializer(serializers.Serializer):
+    student_id=serializers.IntegerField()
+    date=serializers.DateField()
+    status=serializers.ChoiceField(choices=[("PRESENT","Present"),("ABSENT","Absent")])
+
+class AttendanceDailySerializer(serializers.ModelSerializer):
+    student_name=serializers.CharField(read_only=True)
+    standard=serializers.CharField(read_only=True)
+    section=serializers.CharField(read_only=True) 
+
+    class Meta:
+        model=Attendance
+        fields=["date","status","student_name","standard","section"]
+
+class AttendanceSummarySerializer(serializers.Serializer):
+    student_name=serializers.CharField()
+    standard=serializers.CharField()
+    section=serializers.CharField()
+    total_present=serializers.IntegerField()
+    total_absent=serializers.IntegerField()
+    attendance_percentage=serializers.CharField()
